@@ -1,6 +1,8 @@
 const enabledBox = document.getElementById('enabled');
 const siteBox = document.getElementById('site-enabled');
 
+document.getElementById('manage').addEventListener('click', () => chrome.runtime.openOptionsPage());
+
 async function init() {
   const settings = await chrome.storage.sync.get(globalThis.COLON_EMOJI_DEFAULTS);
   enabledBox.checked = settings.enabled;

@@ -3,7 +3,11 @@
   "name": "Colon Emoji",
   "version": "0.1.0",
   "description": "Type :smile: in any text box on the web to insert an emoji, with autocomplete as you type.",
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "unlimitedStorage", "activeTab"],
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
   "action": {
     "default_title": "Colon Emoji",
     "default_popup": "popup/popup.html",

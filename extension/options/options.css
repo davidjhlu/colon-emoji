@@ -1,0 +1,148 @@
+:root {
+  color-scheme: light dark;
+  --bg: #fff;
+  --fg: #1c1e21;
+  --muted: #65676b;
+  --line: #dadde1;
+  --panel: #f0f2f5;
+  --error: #c62828;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #18191a;
+    --fg: #e4e6eb;
+    --muted: #b0b3b8;
+    --line: #3e4042;
+    --panel: #242526;
+    --error: #ef9a9a;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+h2 {
+  margin: 28px 0 10px;
+  font-size: 15px;
+}
+
+#count {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.lead,
+.notes {
+  color: var(--muted);
+}
+
+.lead {
+  margin: 0 0 16px;
+}
+
+.notes {
+  margin: 0;
+  padding-left: 18px;
+}
+
+code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--panel);
+}
+
+form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+form label {
+  display: flex;
+  flex: 1 1 200px;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+input,
+button {
+  font: inherit;
+}
+
+input[type="text"] {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+button {
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+#message {
+  min-height: 21px;
+  margin: 8px 0 0;
+}
+
+#message.error {
+  color: var(--error);
+}
+
+#list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+#list img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+#list span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#list button {
+  padding: 2px 8px;
+  font-size: 12px;
+}

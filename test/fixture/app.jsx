@@ -9,6 +9,16 @@ import { createRoot } from 'react-dom/client';
 
 window.sent = [];
 
+// Records images handed to the page, as a site's upload handling would see them.
+window.received = [];
+async function record(via, files) {
+  for (const file of files) {
+    const { width } = await createImageBitmap(file);
+    window.received.push({ via, type: file.type, width });
+  }
+}
+document.addEventListener('paste', (e) => record('paste', e.clipboardData.files));
+
 function mountLexical(id, register, sendOnEnter) {
   const editor = createEditor({ namespace: id, onError: (e) => { throw e; } });
   editor.setRootElement(document.getElementById(id));

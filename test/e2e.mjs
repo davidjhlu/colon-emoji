@@ -37,6 +37,11 @@ const context = await chromium.launchPersistentContext(profile, {
   args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
 });
 
+// Unpacked extension IDs are derived from the folder path.
+const extensionId = [...createHash('sha256').update(extensionPath).digest('hex').slice(0, 32)]
+  .map((c) => String.fromCharCode(97 + parseInt(c, 16)))
+  .join('');
+
 const page = await context.newPage();
 const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push(e.message));
@@ -70,6 +75,20 @@ const chat = () => page.evaluate(() => window.lexicalChat());
 const rich = () => page.evaluate(() => window.lexicalRich());
 const sent = () => page.evaluate(() => window.sent);
 const value = (selector) => page.inputValue(selector);
+
+// A 200x200 image, to prove uploads get shrunk, drawn by the browser so no fixture file is needed.
+const bigPng = Buffer.from(
+  await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 200;
+    const c = canvas.getContext('2d');
+    c.fillStyle = '#fabe28';
+    c.fillRect(0, 0, 200, 200);
+    return canvas.toDataURL('image/png').split(',')[1];
+  }),
+  'base64',
+);
+const gif = Buffer.from('R0lGODlhIAAgAPEAAP////q+KFhl8h4eHiH/C05FVFNDQVBFMi4wAwEAAAAh+QQAKAAAACwAAAAAIAAgAAAC/wQIECBAgAABAgQIECBAgAABAgQIECBAgAATJkyYECBAgAABAgQIECBAhAkTJkyYMGFAgAABAgQIECDAhAkTJkyYMGFCgAABAgQIEGDChAkTJkyYMGHChAABAgQIEGHChAkTJkyYMGHChAEBAgQIMGHChAkTJkyYMGHChAkBAgQIMGHChAkTJkyYMGHChAkBAgSIMGHChAkTJkyYMGHChAkDAgSYMGHChAkTJkyYMGHChAkTAgSYMGHCjBsTJkyYcOPChAkTAgSYMGHCjBsTJkyYcOPChAkTAkSYMGHCjBsTJkyYcOPChAkTBkSYMGHCjBsTJkyYcOPChAkTBkSYMP9hwowbEyZMmHDjwoQJEwZEmDBhwoQJEyZMmDBhwoQJEwZEmDBhwoQJEyZMmDBhwoQJEwZEmDBhwoQJEyZMmDBhwoQJEwZEmDBhwoQJEyZMmDBhwoQJEwZEmDBhwoQJEyZMmDBhwoQJEwYEmDBhwoQJEyZMmDBhwoQJEwIEmDBhwoQJEyZMmDBhwoQJEwIEmDBhwoQJEyZMmDBhwoQJEwIEiDBhwoQJEyZMmDBhwoQJAwIECDBhwoQJEyZMmDBhwoQJAQIECDBhwoQJEyZMmDBhwoQJAQIECBBhwoQJEyZMmDBhwoQBAQIECBBgwoQJEyZMmDBhwoQAAQIECBAgwIRDCRMmTJgwYUKAAAECBAgQIECECRMmTJgwYUCAAAECBAgQIECAABMmTJgQIECAAAECBAgQIECAAAECBAgQIECAAAECBQAh+QQAKAAAACwAAAAAIAAgAAAC/wQIECBAgAABAgQIECBAgAABAgQIECBAgAAlSpQoESBAgAABAgQIECBAiBIlSpQoUaJAgAABAgQIECBAiRIlSpQoUaJEgAABAgQIEKBEiRIlSpQoUaJEiQABAgQIEKJEiRIlSpQoUaJEiQIBAgQIUKJEiRIlSpQoUaJEiRIBAgQIUKJEiRIlSpQoUaJEiRIBAgQIUaJEiRIlSpQoUaJEiRIFAgQoUaJEiRIlSpQoUaJEiRIlAgQoUaJEjRslSpQoceNEiRIlAgQoUaJEjRslSpQoceNEiRIlAoQoUaJEjRslSpQoceNEiRIlCoQoUaJEjRslSpQoceNEiRIlCoQoUf+iRI0bJUqUKHHjRIkSJQqEKFGiRIkSJUqUKFGiRIkSJQqEKFGiRIkSJUqUKFGiRIkSJQqEKFGiRIkSJUqUKFGiRIkSJQqEKFGiRIkSJUqUKFGiRIkSJQqEKFGiRIkSJUqUKFGiRIkSJQoEKFGiRIkSJUqUKFGiRIkSJQIEKFGiRIkSJUqUKFGiRIkSJQIEKFGiRIkSJUqUKFGiRIkSJQIECFGiRIkSJUqUKFGiRIkSBQIECFCiRIkSJUqUKFGiRIkSAQIECFCiRIkSJUqUKFGiRIkSAQIECBCiRIkSJUqUKFGiRIkCAQIECBCgRIkSJUqUKFGiRIkAAQIECBAgQIlDEiVKlChRokSAAAECBAgQIECIEiVKlChRokCAAAECBAgQIECAACVKlCgRIECAAAECBAgQIECAAAECBAgQIECAAAECBQA7', 'base64');
 
 const tests = {
   async 'textarea: a typed closing colon converts'() {
@@ -224,6 +243,88 @@ const tests = {
     await type('second :tada:');
     assert.equal(await rich(), 'first\n\nsecond 🎉');
   },
+  async 'custom emoji: add one on the settings page, then type it'() {
+    const options = await context.newPage();
+    await options.goto(`chrome-extension://${extensionId}/options/options.html`);
+    await options.setInputFiles('#file', { name: 'Party Cat.png', mimeType: 'image/png', buffer: bigPng });
+    assert.equal(await options.inputValue('#name'), 'party_cat');
+    await options.click('button[type=submit]');
+    await options.waitForSelector('#list li');
+
+    await options.setInputFiles('#file', { name: 'x.png', mimeType: 'image/png', buffer: bigPng });
+    await options.fill('#name', 'party_cat');
+    await options.click('button[type=submit]');
+    await options.waitForSelector('#message.error');
+    await options.setInputFiles('#file', { name: 'x.png', mimeType: 'image/png', buffer: bigPng });
+    await options.fill('#name', 'bad name!');
+    await options.click('button[type=submit]');
+    assert.match(await options.innerText('#message'), /Names need/);
+    assert.equal(await options.locator('#list li').count(), 1);
+    await options.close();
+
+    // Alone in an empty box, which is the case Lexical is fussy about.
+    await fresh('#lexical-chat');
+    await type(':party_cat:');
+    await page.waitForTimeout(150);
+    assert.equal(await chat(), '');
+    assert.deepEqual(await page.evaluate(() => window.received), [{ via: 'paste', type: 'image/png', width: 64 }]);
+    await type('still typing');
+    assert.equal(await chat(), 'still typing');
+  },
+  async 'custom emoji: shows first in the menu with a thumbnail, and Enter attaches it'() {
+    await fresh('#lexical-chat');
+    await type('nice :par');
+    const rows = await menuRows();
+    assert.equal(rows[0].text, ':party_cat:');
+    const painted = await page.evaluate(() => {
+      const canvas = document.querySelector('[data-colon-emoji]').shadowRoot.querySelector('canvas');
+      return canvas.getContext('2d').getImageData(24, 24, 1, 1).data[3];
+    });
+    assert.ok(painted > 0, 'thumbnail drawn');
+    await press('Enter');
+    await page.waitForTimeout(150);
+    assert.equal(await chat(), 'nice ');
+    assert.equal((await page.evaluate(() => window.received)).length, 1);
+    assert.deepEqual(await sent(), []);
+  },
+  async 'custom emoji: a box that ignores images keeps the shortcode and says so'() {
+    await fresh('#plain');
+    await type('hi :party_cat:');
+    await page.waitForTimeout(150);
+    assert.equal(await value('#plain'), 'hi :party_cat:');
+    assert.match(await page.innerText('[data-colon-emoji-note]'), /accept images/);
+  },
+  async 'custom emoji: single-line inputs leave it alone'() {
+    await fresh('#input');
+    await type(':par');
+    assert.ok((await menuRows()).every((r) => !r.text.includes('party_cat')));
+    await type('ty_cat:');
+    assert.equal(await value('#input'), ':party_cat:');
+  },
+  async 'custom emoji: animated GIFs stay GIFs'() {
+    const options = await context.newPage();
+    await options.goto(`chrome-extension://${extensionId}/options/options.html`);
+    await options.setInputFiles('#file', { name: 'spin.gif', mimeType: 'image/gif', buffer: gif });
+    await options.click('button[type=submit]');
+    await options.waitForFunction(() => document.querySelectorAll('#list li').length === 2);
+    await options.close();
+    await fresh('#lexical-chat');
+    await type(':spin:');
+    await page.waitForTimeout(150);
+    assert.deepEqual(await page.evaluate(() => window.received), [{ via: 'paste', type: 'image/gif', width: 32 }]);
+  },
+  async 'custom emoji: deleting one removes it from open tabs'() {
+    await fresh('#lexical-chat');
+    const options = await context.newPage();
+    await options.goto(`chrome-extension://${extensionId}/options/options.html`);
+    await options.click('button[aria-label="Delete party_cat"]');
+    await options.waitForFunction(() => document.querySelectorAll('#list li').length === 1);
+    await options.close();
+    await page.click('#lexical-chat');
+    await type(':party_cat:');
+    await page.waitForTimeout(150);
+    assert.equal(await chat(), ':party_cat:');
+  },
   async 'used emoji rank higher next time'() {
     await fresh('#plain');
     await type(':ca');
@@ -236,12 +337,8 @@ const tests = {
     assert.equal((await menuRows())[0].text, before[2].text);
   },
   async 'the toolbar popup turns the extension off and on'() {
-    // Unpacked extension IDs are derived from the folder path.
-    const id = [...createHash('sha256').update(extensionPath).digest('hex').slice(0, 32)]
-      .map((c) => String.fromCharCode(97 + parseInt(c, 16)))
-      .join('');
     const popup = await context.newPage();
-    await popup.goto(`chrome-extension://${id}/popup/popup.html`);
+    await popup.goto(`chrome-extension://${extensionId}/popup/popup.html`);
 
     await popup.uncheck('#enabled');
     await fresh('#plain');

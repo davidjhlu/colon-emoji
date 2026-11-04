@@ -34,6 +34,24 @@ Details worth knowing:
 - **Flags** use the `flag_` prefix, such as `:flag_us:`.
 - **Password fields** are always skipped.
 
+## Custom emoji
+
+Click the toolbar icon, then **Custom emoji**, to upload an image and name it. After that,
+`:its_name:` works like any other emoji, and yours appear first in the menu with a thumbnail.
+
+A custom emoji can't be text, so it's attached as a small image, the same as pasting a file. The
+other person doesn't need the extension. On Messenger, it sends as its own image, separate from
+any text in the same message.
+
+- **Size:** images are shrunk to 64px. Messenger shows images at about their real size.
+- **Transparency:** transparent areas can show as white once sent on Messenger, depending on the image and chat.
+- **GIFs:** kept as they are, up to 1 MB. Messenger makes people click to play them.
+- **Where it works:** boxes that accept pasted images. If a box ignores the image, the shortcode
+  stays and a short note appears. Single-line inputs such as search bars don't offer them.
+- **Storage:** kept in this browser only, with no sync between computers.
+
+## Settings
+
 Click the toolbar icon to turn the extension off, or off for the current site. It starts off on
 discord.com, app.slack.com and github.com, which have their own emoji menus.
 

@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Colon Emoji: custom emoji</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Custom emoji</h1>
+      <p class="lead">
+        Add an image, then type <code>:its_name:</code> in a chat box. It's attached as a small image, so
+        the other person doesn't need this extension.
+      </p>
+
+      <form id="add">
+        <label>
+          Image
+          <input id="file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required />
+        </label>
+        <label>
+          Name
+          <input id="name" type="text" placeholder="party_cat" autocomplete="off" required />
+        </label>
+        <button type="submit">Add</button>
+      </form>
+      <p id="message" role="status"></p>
+
+      <h2>Your emoji <span id="count"></span></h2>
+      <p id="empty" class="lead">Nothing here yet.</p>
+      <ul id="list"></ul>
+
+      <h2>Good to know</h2>
+      <ul class="notes">
+        <li>Images are shrunk to 64px, which Messenger shows at about that size.</li>
+        <li>Transparent areas may show as white once sent, so tightly cropped images look best.</li>
+        <li>GIFs keep their animation, but Messenger makes people click to play them.</li>
+        <li>Your emoji are stored only in this browser and don't sync to other computers.</li>
+      </ul>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>

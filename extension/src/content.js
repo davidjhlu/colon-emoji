@@ -10,9 +10,11 @@
 
   let active = false;
   let usage = {};
+  let customIndex = createIndex([]);
   let menu = null; // { target, trigger, results, selected } while the menu is open
   let dismissed = null; // { target, start } after Esc, so the same shortcode stays quiet
   let ui = null;
+  const thumbnails = new Map(); // custom emoji name -> Promise<ImageBitmap>
 
   // ---- Settings ----
 
@@ -26,10 +28,21 @@
   }
 
   loadSettings();
-  chrome.storage.local.get({ usage: {} }, (stored) => (usage = stored.usage));
+  chrome.storage.local.get({ usage: {}, customNames: [] }, (stored) => {
+    usage = stored.usage;
+    setCustomNames(stored.customNames);
+  });
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'sync') loadSettings();
+    if (area === 'local' && changes.customNames) setCustomNames(changes.customNames.newValue ?? []);
   });
+
+  // Only names load up front. Images are read on demand, so a user with a large collection
+  // doesn't pay for it in every tab and iframe.
+  function setCustomNames(names) {
+    customIndex = createIndex(names.map((name) => [`custom:${name}`, [name], []]));
+    thumbnails.clear();
+  }
 
   function recordUse(emoji) {
     usage[emoji] = (usage[emoji] ?? 0) + 1;
@@ -142,6 +155,21 @@
     target.dispatchEvent(new ClipboardEvent('paste', { clipboardData, bubbles: true, cancelable: true }));
   }
 
+  /**
+   * Chrome's execCommand doesn't fire beforeinput. Lexical undoes a delete it wasn't told about
+   * when that delete empties the box, so offer the editor a beforeinput event first, and only
+   * use execCommand if no editor claims it.
+   */
+  function deleteSelection(target) {
+    const event = new InputEvent('beforeinput', {
+      inputType: 'deleteContentBackward',
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    });
+    if (target.dispatchEvent(event)) document.execCommand('delete');
+  }
+
   function replaceTrigger(ctx, start, emoji) {
     const { target } = ctx;
     const shortcode = ctx.text.slice(start);
@@ -166,11 +194,53 @@
     recordUse(emoji);
   }
 
+  function dataUrlToBytes(dataUrl) {
+    return Uint8Array.from(atob(dataUrl.split(',')[1]), (ch) => ch.charCodeAt(0));
+  }
+
+  async function readCustom(name) {
+    const key = `custom:${name}`;
+    return (await chrome.storage.local.get(key))[key];
+  }
+
+  /**
+   * Custom emoji can't be text, so they go in as a pasted image, the same as Cmd+V on a file.
+   * The shortcode has to go first: pasting into a selection can replace or keep it, depending
+   * on the site. If nothing takes the image, the shortcode is put back.
+   */
+  async function attachCustom(ctx, start, name) {
+    const { target } = ctx;
+    const shortcode = ctx.text.slice(start);
+    ctx.select(start);
+    deleteSelection(target);
+
+    const stored = await readCustom(name);
+    const extension = stored?.type === 'image/gif' ? 'gif' : 'png';
+    const clipboardData = new DataTransfer();
+    if (stored) {
+      const file = new File([dataUrlToBytes(stored.dataUrl)], `${name}.${extension}`, { type: stored.type });
+      clipboardData.items.add(file);
+    }
+    const paste = new ClipboardEvent('paste', { clipboardData, bubbles: true, cancelable: true, composed: true });
+    if (stored && !target.dispatchEvent(paste)) {
+      recordUse(`custom:${name}`);
+    } else {
+      document.execCommand('insertText', false, shortcode);
+      showNote("This box doesn't accept images.");
+    }
+  }
+
+  // Single-line inputs such as search bars have nowhere to put an image.
+  const canTakeImages = (target) => target.tagName !== 'INPUT';
+
   function choose(position) {
     const { results, trigger } = menu;
     const ctx = currentContext();
     closeMenu();
-    if (ctx) replaceTrigger(ctx, trigger.start, results[position].emoji);
+    if (!ctx) return;
+    const { custom, name, emoji } = results[position];
+    if (custom) attachCustom(ctx, trigger.start, name);
+    else replaceTrigger(ctx, trigger.start, emoji);
   }
 
   // ---- Reacting to typing ----
@@ -184,6 +254,10 @@
 
     if (trigger.closed) {
       closeMenu();
+      if (typed && customIndex.byName.has(trigger.query) && canTakeImages(ctx.target)) {
+        attachCustom(ctx, trigger.start, trigger.query);
+        return;
+      }
       const emoji = index.byName.get(trigger.query);
       if (emoji && typed) replaceTrigger(ctx, trigger.start, emoji);
       return;
@@ -192,7 +266,10 @@
     if (dismissed?.target === ctx.target && dismissed.start === trigger.start) return closeMenu();
     dismissed = null;
 
-    const results = search(index, trigger.query, usage);
+    const custom = canTakeImages(ctx.target)
+      ? search(customIndex, trigger.query, usage).map((result) => ({ ...result, custom: true }))
+      : [];
+    const results = [...custom, ...search(index, trigger.query, usage)].slice(0, 8);
     if (!results.length) return closeMenu();
 
     // After one letter nothing is preselected, so ":D" then Enter still sends the message.
@@ -306,6 +383,7 @@
     .row.picked { background: var(--pick); }
     .glyph { font-size: 20px; line-height: 1; width: 24px; text-align: center;
       font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+    .thumb { width: 24px; height: 24px; }
     .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .hint { padding: 5px 8px 3px; color: var(--muted); font-size: 11px; }
   `;
@@ -337,14 +415,16 @@
     const { host, box } = ensureUi();
     if (!host.isConnected) document.documentElement.append(host);
     box.replaceChildren(
-      ...menu.results.map(({ emoji, name }, i) => {
+      ...menu.results.map(({ emoji, name, custom }, i) => {
         const row = document.createElement('div');
         row.className = i === menu.selected ? 'row picked' : 'row';
         row.dataset.position = i;
         row.setAttribute('role', 'option');
-        const glyph = document.createElement('span');
-        glyph.className = 'glyph';
-        glyph.textContent = emoji;
+        const glyph = custom ? customGlyph(name) : document.createElement('span');
+        if (!custom) {
+          glyph.className = 'glyph';
+          glyph.textContent = emoji;
+        }
         const label = document.createElement('span');
         label.className = 'name';
         label.textContent = `:${name}:`;
@@ -356,6 +436,45 @@
     hint.className = 'hint';
     hint.textContent = menu.selected < 0 ? 'Tab to insert · Esc to dismiss' : 'Enter or Tab to insert · Esc to dismiss';
     box.append(hint);
+  }
+
+  /** Draws to a canvas, because a site's CSP can block <img> but doesn't apply to canvas. */
+  function customGlyph(name) {
+    const canvas = document.createElement('canvas');
+    canvas.className = 'thumb';
+    canvas.width = canvas.height = 48;
+    if (!thumbnails.has(name)) {
+      thumbnails.set(
+        name,
+        readCustom(name).then(({ dataUrl, type }) => createImageBitmap(new Blob([dataUrlToBytes(dataUrl)], { type }))),
+      );
+    }
+    thumbnails.get(name).then((bitmap) => {
+      const scale = Math.min(48 / bitmap.width, 48 / bitmap.height);
+      const width = bitmap.width * scale;
+      const height = bitmap.height * scale;
+      canvas.getContext('2d').drawImage(bitmap, (48 - width) / 2, (48 - height) / 2, width, height);
+    });
+    return canvas;
+  }
+
+  function showNote(text) {
+    const note = document.createElement('div');
+    note.setAttribute('data-colon-emoji-note', '');
+    note.textContent = text;
+    Object.assign(note.style, {
+      position: 'fixed',
+      left: '16px',
+      bottom: '16px',
+      zIndex: '2147483647',
+      padding: '8px 12px',
+      borderRadius: '8px',
+      background: '#1e1e1e',
+      color: '#fff',
+      font: '13px system-ui, sans-serif',
+    });
+    document.documentElement.append(note);
+    setTimeout(() => note.remove(), 4000);
   }
 
   function position(caret) {

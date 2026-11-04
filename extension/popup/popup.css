@@ -41,6 +41,13 @@ h1 {
   white-space: nowrap;
 }
 
+button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px;
+  font: inherit;
+}
+
 p {
   margin: 10px 0 0;
   color: var(--muted);
