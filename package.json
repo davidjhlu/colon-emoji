@@ -1,0 +1,22 @@
+{
+  "name": "colon-emoji",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:data": "node scripts/build-emoji-data.mjs",
+    "build:icons": "node scripts/build-icons.mjs",
+    "test": "node --test test/search.test.mjs && node test/e2e.mjs"
+  },
+  "devDependencies": {
+    "@lexical/history": "^0.53.0",
+    "@lexical/plain-text": "^0.53.0",
+    "@lexical/rich-text": "^0.53.0",
+    "emojibase-data": "^18.0.0",
+    "esbuild": "^0.28.2",
+    "lexical": "^0.53.0",
+    "playwright": "^1.64.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  }
+}

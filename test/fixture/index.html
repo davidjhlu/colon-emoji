@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Colon Emoji test page</title>
+    <style>
+      body { font: 15px system-ui, sans-serif; margin: 24px; max-width: 640px; }
+      label { display: block; margin: 14px 0 4px; color: #555; font-size: 12px; }
+      textarea, input, [contenteditable] {
+        display: block; box-sizing: border-box; width: 100%; padding: 8px; font: inherit;
+        border: 1px solid #bbb; border-radius: 8px;
+      }
+      [contenteditable] { min-height: 38px; }
+      [contenteditable] p { margin: 0; }
+    </style>
+  </head>
+  <body>
+    <label>Lexical, Enter sends (like a chat box)</label>
+    <div id="lexical-chat" contenteditable="true"></div>
+    <label>Lexical rich text</label>
+    <div id="lexical-rich" contenteditable="true"></div>
+    <label>React controlled textarea</label>
+    <div id="react-root"></div>
+    <label>Plain textarea</label>
+    <textarea id="plain"></textarea>
+    <label>Text input</label>
+    <input id="input" type="text" />
+    <label>Password</label>
+    <input id="password" type="password" />
+    <label>Plain contenteditable</label>
+    <div id="ce" contenteditable="true"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
