@@ -1,15 +1,18 @@
 {
   "manifest_version": 3,
-  "name": "Colon Emoji",
+  "name": ":emoji",
   "version": "0.1.0",
   "description": "Type :smile: in any text box on the web to insert an emoji, with autocomplete as you type.",
   "permissions": ["storage", "unlimitedStorage", "activeTab"],
+  "background": {
+    "service_worker": "src/background.js"
+  },
   "options_ui": {
     "page": "options/options.html",
     "open_in_tab": true
   },
   "action": {
-    "default_title": "Colon Emoji",
+    "default_title": ":emoji",
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",

@@ -18,13 +18,15 @@
 
   // ---- Settings ----
 
-  function applySettings({ enabled, disabledSites }) {
-    active = enabled && !disabledSites.includes(topHost);
+  function applySettings({ consented, enabled, disabledSites }) {
+    active = consented && enabled && !disabledSites.includes(topHost);
     if (!active) closeMenu();
   }
 
   function loadSettings() {
-    chrome.storage.sync.get(globalThis.COLON_EMOJI_DEFAULTS, applySettings);
+    chrome.storage.sync.get(globalThis.COLON_EMOJI_DEFAULTS, (settings) => {
+      chrome.storage.local.get({ consented: false }, ({ consented }) => applySettings({ ...settings, consented }));
+    });
   }
 
   loadSettings();
@@ -33,7 +35,7 @@
     setCustomNames(stored.customNames);
   });
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'sync') loadSettings();
+    if (area === 'sync' || changes.consented) loadSettings();
     if (area === 'local' && changes.customNames) setCustomNames(changes.customNames.newValue ?? []);
   });
 

@@ -1,0 +1,23 @@
+p,
+ul {
+  margin: 0 0 8px;
+}
+
+ul {
+  padding-left: 18px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.primary {
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 16px;
+  background: #5865f2;
+  color: #fff;
+}

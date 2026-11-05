@@ -3,7 +3,14 @@ const siteBox = document.getElementById('site-enabled');
 
 document.getElementById('manage').addEventListener('click', () => chrome.runtime.openOptionsPage());
 
+document.getElementById('setup').addEventListener('click', () =>
+  chrome.tabs.create({ url: chrome.runtime.getURL('welcome/welcome.html') }),
+);
+
 async function init() {
+  const { consented } = await chrome.storage.local.get({ consented: false });
+  document.getElementById('setup').hidden = consented;
+
   const settings = await chrome.storage.sync.get(globalThis.COLON_EMOJI_DEFAULTS);
   enabledBox.checked = settings.enabled;
   enabledBox.addEventListener('change', () => chrome.storage.sync.set({ enabled: enabledBox.checked }));

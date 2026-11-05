@@ -6,6 +6,8 @@
   "scripts": {
     "build:data": "node scripts/build-emoji-data.mjs",
     "build:icons": "node scripts/build-icons.mjs",
+    "package": "node scripts/package.mjs",
+    "build:store": "node scripts/build-store-assets.mjs",
     "test": "node --test test/search.test.mjs && node test/e2e.mjs"
   },
   "devDependencies": {

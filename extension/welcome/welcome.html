@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Welcome to :emoji</title>
+    <link rel="stylesheet" href="../options/options.css" />
+    <link rel="stylesheet" href="welcome.css" />
+  </head>
+  <body>
+    <main>
+      <section id="ask">
+        <h1>Before you start</h1>
+        <p class="lead">:emoji is off until you agree to how it works.</p>
+
+        <h2>What it reads</h2>
+        <p>
+          To spot shortcodes like <code>:smile:</code>, it reads the text just before your cursor as you type
+          in text boxes on the websites you visit. That can include private messages, emails and anything else
+          you type. Password fields are skipped.
+        </p>
+
+        <h2>What happens to it</h2>
+        <ul>
+          <li>Your text is checked on your device and is never saved or sent anywhere.</li>
+          <li>The extension has no server and makes no network requests.</li>
+        </ul>
+
+        <h2>What it saves</h2>
+        <ul>
+          <li>On this device: custom emoji images you upload, and how often you use each emoji.</li>
+          <li>
+            In Chrome sync storage: the on/off setting and the list of sites you turned it off for. If you use
+            Chrome sync, Google syncs these through your account.
+          </li>
+        </ul>
+
+        <div class="actions">
+          <button id="agree" type="button" class="primary">I agree, turn it on</button>
+          <button id="decline" type="button">No thanks</button>
+        </div>
+      </section>
+
+      <section id="done" hidden>
+        <h1>You're all set</h1>
+        <p class="lead">
+          Refresh any tabs that were already open, then type <code>:smile:</code> or <code>:sm</code> in a text box.
+          You can turn it off at any time from the toolbar icon.
+        </p>
+      </section>
+
+      <section id="declined" hidden>
+        <h1>:emoji is staying off</h1>
+        <p class="lead">
+          It won't read anything. To change your mind, click the toolbar icon and choose Finish setup, or remove the
+          extension from <code>chrome://extensions</code>.
+        </p>
+      </section>
+    </main>
+    <script src="welcome.js"></script>
+  </body>
+</html>

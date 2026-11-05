@@ -12,7 +12,11 @@ const svg = `
 const browser = await chromium.launch({ channel: 'chromium' });
 for (const size of [16, 32, 48, 128]) {
   const page = await browser.newPage({ viewport: { width: size, height: size } });
-  await page.setContent(`<!doctype html><body style="margin:0;background:transparent">${svg}</body>`);
+  // The Chrome Web Store wants 96px of artwork inside the 128px icon. Small sizes need every pixel.
+  const padding = size === 128 ? 16 : 0;
+  await page.setContent(
+    `<!doctype html><body style="margin:0;background:transparent;box-sizing:border-box;height:${size}px;padding:${padding}px">${svg}</body>`,
+  );
   await page.screenshot({ path: `extension/icons/icon${size}.png`, omitBackground: true });
   await page.close();
 }

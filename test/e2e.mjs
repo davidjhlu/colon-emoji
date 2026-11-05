@@ -10,7 +10,7 @@ import { build } from 'esbuild';
 import { chromium } from 'playwright';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const extensionPath = resolve(here, '../extension');
+const extensionPath = resolve(process.env.EXTENSION_DIR ?? join(here, '../extension'));
 const outDir = join(here, '.build');
 mkdirSync(outDir, { recursive: true });
 
@@ -91,6 +91,33 @@ const bigPng = Buffer.from(
 const gif = Buffer.from('R0lGODlhIAAgAPEAAP////q+KFhl8h4eHiH/C05FVFNDQVBFMi4wAwEAAAAh+QQAKAAAACwAAAAAIAAgAAAC/wQIECBAgAABAgQIECBAgAABAgQIECBAgAATJkyYECBAgAABAgQIECBAhAkTJkyYMGFAgAABAgQIECDAhAkTJkyYMGFCgAABAgQIEGDChAkTJkyYMGHChAABAgQIEGHChAkTJkyYMGHChAEBAgQIMGHChAkTJkyYMGHChAkBAgQIMGHChAkTJkyYMGHChAkBAgSIMGHChAkTJkyYMGHChAkDAgSYMGHChAkTJkyYMGHChAkTAgSYMGHCjBsTJkyYcOPChAkTAgSYMGHCjBsTJkyYcOPChAkTAkSYMGHCjBsTJkyYcOPChAkTBkSYMGHCjBsTJkyYcOPChAkTBkSYMP9hwowbEyZMmHDjwoQJEwZEmDBhwoQJEyZMmDBhwoQJEwZEmDBhwoQJEyZMmDBhwoQJEwZEmDBhwoQJEyZMmDBhwoQJEwZEmDBhwoQJEyZMmDBhwoQJEwZEmDBhwoQJEyZMmDBhwoQJEwYEmDBhwoQJEyZMmDBhwoQJEwIEmDBhwoQJEyZMmDBhwoQJEwIEmDBhwoQJEyZMmDBhwoQJEwIEiDBhwoQJEyZMmDBhwoQJAwIECDBhwoQJEyZMmDBhwoQJAQIECDBhwoQJEyZMmDBhwoQJAQIECBBhwoQJEyZMmDBhwoQBAQIECBBgwoQJEyZMmDBhwoQAAQIECBAgwIRDCRMmTJgwYUKAAAECBAgQIECECRMmTJgwYUCAAAECBAgQIECAABMmTJgQIECAAAECBAgQIECAAAECBAgQIECAAAECBQAh+QQAKAAAACwAAAAAIAAgAAAC/wQIECBAgAABAgQIECBAgAABAgQIECBAgAAlSpQoESBAgAABAgQIECBAiBIlSpQoUaJAgAABAgQIECBAiRIlSpQoUaJEgAABAgQIEKBEiRIlSpQoUaJEiQABAgQIEKJEiRIlSpQoUaJEiQIBAgQIUKJEiRIlSpQoUaJEiRIBAgQIUKJEiRIlSpQoUaJEiRIBAgQIUaJEiRIlSpQoUaJEiRIFAgQoUaJEiRIlSpQoUaJEiRIlAgQoUaJEjRslSpQoceNEiRIlAgQoUaJEjRslSpQoceNEiRIlAoQoUaJEjRslSpQoceNEiRIlCoQoUaJEjRslSpQoceNEiRIlCoQoUf+iRI0bJUqUKHHjRIkSJQqEKFGiRIkSJUqUKFGiRIkSJQqEKFGiRIkSJUqUKFGiRIkSJQqEKFGiRIkSJUqUKFGiRIkSJQqEKFGiRIkSJUqUKFGiRIkSJQqEKFGiRIkSJUqUKFGiRIkSJQoEKFGiRIkSJUqUKFGiRIkSJQIEKFGiRIkSJUqUKFGiRIkSJQIEKFGiRIkSJUqUKFGiRIkSJQIECFGiRIkSJUqUKFGiRIkSBQIECFCiRIkSJUqUKFGiRIkSAQIECFCiRIkSJUqUKFGiRIkSAQIECBCiRIkSJUqUKFGiRIkCAQIECBCgRIkSJUqUKFGiRIkAAQIECBAgQIlDEiVKlChRokSAAAECBAgQIECIEiVKlChRokCAAAECBAgQIECAACVKlCgRIECAAAECBAgQIECAAAECBAgQIECAAAECBQA7', 'base64');
 
 const tests = {
+  async 'consent: nothing runs until the user agrees on the page that opens at install'() {
+    const welcomeUrl = `chrome-extension://${extensionId}/welcome/welcome.html`;
+    const welcome =
+      context.pages().find((p) => p.url() === welcomeUrl) ??
+      (await context.waitForEvent('page', { predicate: (p) => p.url() === welcomeUrl }));
+
+    await fresh('#plain');
+    await type(':smile: :sm');
+    assert.equal(await value('#plain'), ':smile: :sm');
+    assert.equal((await menuRows()).length, 0);
+
+    await welcome.click('#decline');
+    await welcome.waitForSelector('#declined:not([hidden])');
+    await fresh('#plain');
+    await type(':smile:');
+    assert.equal(await value('#plain'), ':smile:');
+
+    await welcome.reload();
+    await welcome.click('#agree');
+    await welcome.waitForSelector('#done:not([hidden])');
+    await settle();
+    await page.bringToFront();
+    await page.click('#plain');
+    await type(' :smile:');
+    assert.ok((await value('#plain')).endsWith(' 😄'), 'an already open tab turns on');
+    await welcome.close();
+  },
   async 'textarea: a typed closing colon converts'() {
     await fresh('#plain');
     await type('hello :smile: there');
